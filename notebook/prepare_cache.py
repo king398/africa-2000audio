@@ -1,29 +1,24 @@
+import os
+import warnings
+from dataclasses import dataclass
+from typing import Any, Dict, List, Union
+
+import evaluate
+import torch
 from datasets import load_dataset, Audio
 from transformers import WhisperTokenizer, WhisperFeatureExtractor, WhisperProcessor, WhisperForConditionalGeneration, \
     Seq2SeqTrainer, Seq2SeqTrainingArguments, TrainerCallback
-from transformers.integrations import TensorBoardCallback, ProgressCallback
-import torch
-from dataclasses import dataclass
-from typing import Any, Dict, List, Union
-import evaluate
-import warnings
-import os
 
 warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
                        data_dir="/home/mithil/PycharmProjects/africa-2000audio/data/train_hf",
                        )
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
+metric = evaluate.load("wer")
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained("openai/whisper-small")
 tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-small", language="English", task="transcribe")
 processor = WhisperProcessor.from_pretrained("openai/whisper-small", language="English", task="transcribe")
-metric = evaluate.load("wer")
-
-
-class ProgressLoggingCallback(TrainerCallback):
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        print(f"Progress: Evaluation step {state.global_step} of total {state.max_steps} steps.")
 
 
 def prepare_dataset(batch):
@@ -35,6 +30,11 @@ def prepare_dataset(batch):
     # encode target text to label ids
     batch["labels"] = tokenizer(batch["transcription"], truncation=True, max_length=448).input_ids
     return batch
+
+
+class ProgressLoggingCallback(TrainerCallback):
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        print(f"Progress: Evaluation step {state.global_step} of total {state.max_steps} steps.")
 
 
 def compute_metrics(pred):
@@ -49,6 +49,7 @@ def compute_metrics(pred):
     label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
 
     wer = metric.compute(predictions=pred_str, references=label_str, ) * 100
+    print("WER: ", wer)
 
     return {"wer": wer}
 
@@ -81,7 +82,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         return batch
 
 
-dataset = dataset.map(prepare_dataset,writer_batch_size=64,num_proc=32)
+dataset = dataset.map(prepare_dataset, writer_batch_size=64, num_proc=32)
 train_dataset = dataset['train']
 valid_dataset = dataset['validation']
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
@@ -96,7 +97,7 @@ class CFG:
     batch_size_per_device = 4
     epochs = 3
     train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
-    eval_steps = (int(49109 / (batch_size_per_device * 2)))
+    eval_steps = (int(49109 / (batch_size_per_device * 2))) * 2
 
 
 print(f"Training steps: {CFG.train_steps}")
@@ -107,18 +108,15 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=1e-5,
     gradient_checkpointing=False,
     evaluation_strategy="steps",
-    per_device_eval_batch_size=CFG.batch_size_per_device * 2,  # try 4 and see if it crashes
+    per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
     generation_max_length=448,
-    logging_steps=100,
     report_to=["tensorboard"],
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
-    max_steps=CFG.train_steps,
-    eval_steps=CFG.eval_steps,
     push_to_hub=False,
-    save_steps=CFG.eval_steps,
+    num_train_epochs=CFG.epochs,
     # gradient_accumulation_steps=2,
     # deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
 
@@ -126,6 +124,8 @@ training_args = Seq2SeqTrainingArguments(
     dataloader_num_workers=32,
     fp16=True,
     local_rank=os.environ["LOCAL_RANK"],
+    eval_steps=CFG.eval_steps,
+    save_steps=CFG.eval_steps,
 
 )
 
