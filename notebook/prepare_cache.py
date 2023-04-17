@@ -94,38 +94,40 @@ model.config.use_cache = False
 
 
 class CFG:
-    batch_size_per_device = 4
-    epochs = 3
+    batch_size_per_device = 24
+    epochs = 5
     train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
-    eval_steps = (int(49109 / (batch_size_per_device * 2))) * 2
+    eval_steps = int(49109 / (batch_size_per_device * 4)) * 2
 
+
+print(f"eval steps: {CFG.eval_steps}")
 
 print(f"Training steps: {CFG.train_steps}")
 training_args = Seq2SeqTrainingArguments(
-    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-baseline",
+    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-3epoch-english-only",
     # change to a repo name of your choice dsn_afrispeech
     per_device_train_batch_size=CFG.batch_size_per_device,
-    learning_rate=1e-5,
-    gradient_checkpointing=False,
-    evaluation_strategy="steps",
+    learning_rate=1e-4,
+    gradient_checkpointing=True,
+    evaluation_strategy="epoch",
     per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
     generation_max_length=448,
-    report_to=["tensorboard"],
+    report_to=["tensorboard", "wandb"],
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
     push_to_hub=False,
     num_train_epochs=CFG.epochs,
-    # gradient_accumulation_steps=2,
+    gradient_accumulation_steps=2,
     # deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
 
     seed=42,
     dataloader_num_workers=32,
     fp16=True,
     local_rank=os.environ["LOCAL_RANK"],
-    eval_steps=CFG.eval_steps,
-    save_steps=CFG.eval_steps,
+    logging_steps=100,
+    save_strategy="epoch",
 
 )
 
