@@ -2,23 +2,35 @@ import os
 import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
-
+from joblib import Parallel, delayed
+from statistics import mean
 import evaluate
 import torch
 from datasets import load_dataset, Audio
 from transformers import WhisperTokenizer, WhisperFeatureExtractor, WhisperProcessor, WhisperForConditionalGeneration, \
     Seq2SeqTrainer, Seq2SeqTrainingArguments, TrainerCallback
+import jiwer
 
 warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
                        data_dir="/home/mithil/PycharmProjects/africa-2000audio/data/train_hf",
                        )
+print(len(dataset["train"]))
+print(len(dataset["validation"]))
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 metric = evaluate.load("wer")
 
-feature_extractor = WhisperFeatureExtractor.from_pretrained("openai/whisper-small")
-tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-small", language="English", task="transcribe")
-processor = WhisperProcessor.from_pretrained("openai/whisper-small", language="English", task="transcribe")
+
+class CFG:
+    batch_size_per_device = 4
+    epochs = 4
+    train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
+    model = "openai/whisper-medium"
+
+
+feature_extractor = WhisperFeatureExtractor.from_pretrained(CFG.model)
+tokenizer = WhisperTokenizer.from_pretrained(CFG.model, language="English", task="transcribe")
+processor = WhisperProcessor.from_pretrained(CFG.model, language="English", task="transcribe")
 
 
 def prepare_dataset(batch):
@@ -37,6 +49,11 @@ class ProgressLoggingCallback(TrainerCallback):
         print(f"Progress: Evaluation step {state.global_step} of total {state.max_steps} steps.")
 
 
+def compute_wer_single_pair(label_str, pred_str):
+    return jiwer.wer(label_str, pred_str)
+
+
+
 def compute_metrics(pred):
     pred_ids = pred.predictions
     label_ids = pred.label_ids
@@ -52,7 +69,6 @@ def compute_metrics(pred):
     print("WER: ", wer)
 
     return {"wer": wer}
-
 
 @dataclass
 class DataCollatorSpeechSeq2SeqWithPadding:
@@ -86,28 +102,17 @@ dataset = dataset.map(prepare_dataset, writer_batch_size=64, num_proc=32)
 train_dataset = dataset['train']
 valid_dataset = dataset['validation']
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
-model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
+model = WhisperForConditionalGeneration.from_pretrained(CFG.model)
 
 model.config.forced_decoder_ids = None
 model.config.suppress_tokens = []
 model.config.use_cache = False
 
-
-class CFG:
-    batch_size_per_device = 24
-    epochs = 5
-    train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
-    eval_steps = int(49109 / (batch_size_per_device * 4)) * 2
-
-
-print(f"eval steps: {CFG.eval_steps}")
-
-print(f"Training steps: {CFG.train_steps}")
 training_args = Seq2SeqTrainingArguments(
-    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-3epoch-english-only",
+    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-medium-4epoch-1e-5-cosine_with_restarts",
     # change to a repo name of your choice dsn_afrispeech
     per_device_train_batch_size=CFG.batch_size_per_device,
-    learning_rate=1e-4,
+    learning_rate=1e-5,
     gradient_checkpointing=True,
     evaluation_strategy="epoch",
     per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
@@ -128,9 +133,10 @@ training_args = Seq2SeqTrainingArguments(
     local_rank=os.environ["LOCAL_RANK"],
     logging_steps=100,
     save_strategy="epoch",
+    lr_scheduler_type="cosine_with_restarts",
+    #fp16_full_eval=True,
 
 )
-
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,

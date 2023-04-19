@@ -21,7 +21,7 @@ dataset = dataset.remove_columns(
     ["user_ids", "accent", "age_group", "country", "nchars", 'audio_paths', 'duration', 'origin', 'domain', 'split',
      'audio_path_local', 'transcription'])
 
-model_path = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-baseline"
+model_path = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-5epoch-1e-5"
 tokenizer = WhisperTokenizer.from_pretrained(model_path, language="English", task="transcribe")
 processor = WhisperProcessor.from_pretrained(model_path, language="English", task="transcribe")
 
@@ -63,4 +63,5 @@ for i, (input_feature, ID) in enumerate(tqdm(loader, total=len(loader))):
 sub_df = pd.DataFrame()
 sub_df['ID'] = id_dict.keys()
 sub_df['transcript'] = id_dict.values()
-sub_df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-small-3epoch-english-only.csv", index=False)
+sub_df = sub_df.fillna('""')
+sub_df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-small-5epoch-1e-5.csv", index=False)

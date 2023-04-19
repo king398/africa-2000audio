@@ -19,10 +19,8 @@ for i in submission_df['ID']:
 
 pipe = pipeline(
     "automatic-speech-recognition",
-    model="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-baseline",
-    chunk_length_s=30,
+    model="openai/whisper-large",
     device=device,
-    stride_length_s=[6, 0],
 )
 files = test_metadata['audio_path_local'].tolist()
 ID = test_metadata['ID'].tolist()
@@ -32,7 +30,7 @@ for idx in tqdm(range(0, len(files), batch_size)):
     current_batch = files[idx:idx + batch_size]
     current_batch_id = ID[idx:idx + batch_size]
     # Process and transcribe each audio file in the current batch
-    transcription = pipe(current_batch, batch_size=8,)
+    transcription = pipe(current_batch, batch_size=4,)
     for index, i in enumerate(transcription):
         id_dict.update({current_batch_id[index]: i['text']})
 
@@ -40,5 +38,5 @@ for idx in tqdm(range(0, len(files), batch_size)):
 sub_df = pd.DataFrame()
 sub_df['ID'] = id_dict.keys()
 sub_df['transcript'] = id_dict.values()
-sub_df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/submission/whisper_baseline_with_pipeline.csv",
+sub_df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-large-no-finetune.csv",
               index=False)
