@@ -21,7 +21,7 @@ dataset = dataset.remove_columns(
     ["user_ids", "accent", "age_group", "country", "nchars", 'audio_paths', 'duration', 'origin', 'domain', 'split',
      'audio_path_local', 'transcription'])
 
-model_path = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-5epoch-1e-5"
+model_path = "openai/whisper-medium"
 tokenizer = WhisperTokenizer.from_pretrained(model_path, language="English", task="transcribe")
 processor = WhisperProcessor.from_pretrained(model_path, language="English", task="transcribe")
 
@@ -49,19 +49,22 @@ class AudioDataset(Dataset):
         return len(self.dataset)
 
 
-loader = DataLoader(AudioDataset(dataset["test"]), batch_size=8, shuffle=False, num_workers=8, pin_memory=True,
+loader = DataLoader(AudioDataset(dataset["test"]), batch_size=1, shuffle=False, num_workers=8, pin_memory=True,
                     prefetch_factor=4)
 
 for i, (input_feature, ID) in enumerate(tqdm(loader, total=len(loader))):
     input_feature = input_feature.to(torch.device("cuda:1"))
 
     predicted_ids = model.generate(input_feature)
+    print(predicted_ids)
     transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
     for id_one, transcript_one in zip(ID, transcription):
         id_dict[id_one] = transcript_one
-
-sub_df = pd.DataFrame()
+    print(transcription)
+    break
+"""sub_df = pd.DataFrame()
 sub_df['ID'] = id_dict.keys()
 sub_df['transcript'] = id_dict.values()
 sub_df = sub_df.fillna('""')
 sub_df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-small-5epoch-1e-5.csv", index=False)
+"""

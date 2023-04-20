@@ -15,17 +15,16 @@ warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
                        data_dir="/home/mithil/PycharmProjects/africa-2000audio/data/train_hf",
                        )
-print(len(dataset["train"]))
-print(len(dataset["validation"]))
+
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 metric = evaluate.load("wer")
 
 
 class CFG:
-    batch_size_per_device = 4
+    batch_size_per_device = 12
     epochs = 4
     train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
-    model = "openai/whisper-medium"
+    model = "openai/whisper-medium.en"
 
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained(CFG.model)
@@ -53,7 +52,6 @@ def compute_wer_single_pair(label_str, pred_str):
     return jiwer.wer(label_str, pred_str)
 
 
-
 def compute_metrics(pred):
     pred_ids = pred.predictions
     label_ids = pred.label_ids
@@ -64,11 +62,14 @@ def compute_metrics(pred):
     # we do not want to group tokens when computing the metrics
     pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
+    print(f"Predicted: {pred_str[:5]}")
+    print(f"Label: {label_str[:5]}")
 
-    wer = metric.compute(predictions=pred_str, references=label_str, ) * 100
+    wer = jiwer.wer(label_str, pred_str) * 100
     print("WER: ", wer)
 
     return {"wer": wer}
+
 
 @dataclass
 class DataCollatorSpeechSeq2SeqWithPadding:
@@ -109,7 +110,7 @@ model.config.suppress_tokens = []
 model.config.use_cache = False
 
 training_args = Seq2SeqTrainingArguments(
-    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-medium-4epoch-1e-5-cosine_with_restarts",
+    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-medium-4epoch-1e-5-final",
     # change to a repo name of your choice dsn_afrispeech
     per_device_train_batch_size=CFG.batch_size_per_device,
     learning_rate=1e-5,
@@ -118,23 +119,23 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
     generation_max_length=448,
-    report_to=["tensorboard", "wandb"],
-    load_best_model_at_end=True,
+    report_to=["tensorboard", ],
+    # load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
     push_to_hub=False,
     num_train_epochs=CFG.epochs,
     gradient_accumulation_steps=2,
-    # deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
+    deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
 
     seed=42,
     dataloader_num_workers=32,
-    fp16=True,
-    local_rank=os.environ["LOCAL_RANK"],
-    logging_steps=100,
+    logging_steps=50,
     save_strategy="epoch",
-    lr_scheduler_type="cosine_with_restarts",
-    #fp16_full_eval=True,
+    fp16=True,
+    dataloader_pin_memory=True,
+
+fp16_full_eval=True,
 
 )
 trainer = Seq2SeqTrainer(

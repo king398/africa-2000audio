@@ -159,7 +159,7 @@ model = Wav2Vec2ForCTC.from_pretrained(
     pad_token_id=processor.tokenizer.pad_token_id,
     vocab_size=len(processor.tokenizer), )
 
-model = model.freeze_feature_extractor()
+model.freeze_feature_extractor()
 
 
 class CFG:

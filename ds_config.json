@@ -5,14 +5,11 @@
     "loss_scale_window": 1000,
     "initial_scale_power": 16,
     "hysteresis": 2,
-    "min_loss_scale": 1
+    "min_loss_scale": 1,
+    "auto_cast": "auto"
   },
   "zero_optimization": {
     "stage": 2,
-    "offload_optimizer": {
-      "device": "cpu",
-      "pin_memory": true
-    },
     "allgather_partitions": true,
     "allgather_bucket_size": 5e8,
     "overlap_comm": true,
@@ -29,5 +26,17 @@
   "train_batch_size": "auto",
   "train_micro_batch_size_per_gpu": "auto",
   "steps_per_print": 2000,
-  "wall_clock_breakdown": false
+  "wall_clock_breakdown": false,
+  "training": {
+    "async_io": true
+  },
+  "flops_profiler": {
+    "enabled": true,
+    "profile_step": 10,
+    "module_depth": -1,
+    "top_modules": 1,
+    "detailed": true,
+    "output_file": "flops_second.json"
+  }
 }
+

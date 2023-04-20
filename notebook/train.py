@@ -13,6 +13,8 @@ warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
                        data_dir="/home/mithil/PycharmProjects/africa-2000audio/data/train_hf",
                        )
+dataset['train'] = dataset['train'].select(range(1000))
+dataset['validation'] = dataset['validation'].select(range(1000))
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained("openai/whisper-small")
@@ -81,7 +83,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         return batch
 
 
-dataset = dataset.map(prepare_dataset,writer_batch_size=64,num_proc=32)
+dataset = dataset.map(prepare_dataset, writer_batch_size=64, num_proc=32)
 train_dataset = dataset['train']
 valid_dataset = dataset['validation']
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
