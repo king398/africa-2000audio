@@ -6,7 +6,9 @@ from datasets import load_dataset, Audio
 from tqdm import tqdm
 from transformers import WhisperTokenizer, WhisperFeatureExtractor, WhisperProcessor, WhisperForConditionalGeneration
 from torch.utils.data import DataLoader, Dataset
+from transformers.models.whisper.english_normalizer import BasicTextNormalizer
 
+normalizer = BasicTextNormalizer()
 submission_df = pd.read_csv("/home/mithil/PycharmProjects/africa-2000audio/data/SampleSubmission.csv")
 id_dict = {}
 for i in submission_df['ID']:
@@ -21,12 +23,12 @@ dataset = dataset.remove_columns(
     ["user_ids", "accent", "age_group", "country", "nchars", 'audio_paths', 'duration', 'origin', 'domain', 'split',
      'audio_path_local', 'transcription'])
 
-model_path = "openai/whisper-medium"
+model_path = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-medium-4epoch-1e-5-cosine-deepspeed"
 tokenizer = WhisperTokenizer.from_pretrained(model_path, language="English", task="transcribe")
 processor = WhisperProcessor.from_pretrained(model_path, language="English", task="transcribe")
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained(model_path)
-model = WhisperForConditionalGeneration.from_pretrained(model_path).to(torch.device("cuda:1"))
+model = WhisperForConditionalGeneration.from_pretrained(f"{model_path}/checkpoint-1466").to(torch.device("cuda:1"))
 model.config.forced_decoder_ids = None
 model.config.suppress_tokens = []
 model.config.use_cache = False
@@ -49,22 +51,33 @@ class AudioDataset(Dataset):
         return len(self.dataset)
 
 
-loader = DataLoader(AudioDataset(dataset["test"]), batch_size=1, shuffle=False, num_workers=8, pin_memory=True,
-                    prefetch_factor=4)
+loader = DataLoader(AudioDataset(dataset["test"]), batch_size=8, shuffle=False, num_workers=8, pin_memory=True,
+                    prefetch_factor=4, drop_last=False)
 
 for i, (input_feature, ID) in enumerate(tqdm(loader, total=len(loader))):
     input_feature = input_feature.to(torch.device("cuda:1"))
 
     predicted_ids = model.generate(input_feature)
-    print(predicted_ids)
     transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
     for id_one, transcript_one in zip(ID, transcription):
+        transcript_one = normalizer(transcript_one)
+        transcript_one = transcript_one.lower()
         id_dict[id_one] = transcript_one
-    print(transcription)
-    break
-"""sub_df = pd.DataFrame()
+
+sub_df = pd.DataFrame()
 sub_df['ID'] = id_dict.keys()
 sub_df['transcript'] = id_dict.values()
 sub_df = sub_df.fillna('""')
-sub_df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-small-5epoch-1e-5.csv", index=False)
-"""
+sub_df['transcript'] = sub_df['transcript'].replace(' ', '""')
+sub_df['transcript'] = sub_df['transcript'].replace('', '""')
+sub_df.to_csv(
+    "/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-medium-4epoch-1e-5-cosine-deepspeed.csv",
+    index=False)
+
+
+def normalize_text(text):
+    if not pd.isna(text):
+        text = normalizer(text)
+    else:
+        text = '""'
+    return text

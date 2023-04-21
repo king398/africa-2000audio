@@ -147,9 +147,8 @@ def compute_metrics(pred):
     return {"wer": wer}
 
 
-
 model = Wav2Vec2ForCTC.from_pretrained(
-    "facebook/wav2vec2-xls-r-300m",
+    "facebook/wav2vec2-base-960h",
     attention_dropout=0.0,
     hidden_dropout=0.0,
     feat_proj_dropout=0.0,
@@ -163,27 +162,27 @@ model.freeze_feature_extractor()
 
 
 class CFG:
-    batch_size_per_device = 8
-    epochs = 5
+    batch_size_per_device = 4
+    epochs = 4
     train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
 
 
 training_args = Seq2SeqTrainingArguments(
     output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/wav2vec2-xls-r-300m-baseline-5-epoch",
     # change to a repo name of your choice dsn_afrispeech
-    per_device_train_batch_size=4,
+    per_device_train_batch_size=CFG.batch_size_per_device,
     gradient_checkpointing=True,
     evaluation_strategy="epoch",
     per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
     # generation_max_length=448,
-    report_to=["tensorboard", "wandb"],
+    # report_to=["tensorboard", "wandb"],
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
     push_to_hub=False,
     num_train_epochs=CFG.epochs,
-    gradient_accumulation_steps=2,
+    gradient_accumulation_steps=4,
 
     seed=42,
     fp16=True,
@@ -193,7 +192,10 @@ training_args = Seq2SeqTrainingArguments(
     fp16_full_eval=True,
     learning_rate=1e-5,
     warmup_steps=100,
-    group_by_length=True,
+    # group_by_length=True,
+    deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
+
+    save_total_limit=1,
 )
 
 trainer = Trainer(
@@ -205,4 +207,7 @@ trainer = Trainer(
     eval_dataset=validation_dataset,
     tokenizer=processor.feature_extractor,
 )
+processor.save_pretrained(training_args.output_dir)
+torch.cuda.empty_cache()
 trainer.train()
+trainer.save_model(training_args.output_dir)
