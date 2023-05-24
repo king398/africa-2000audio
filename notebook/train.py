@@ -95,7 +95,7 @@ model.config.use_cache = False
 
 
 class CFG:
-    batch_size_per_device = 4
+    batch_size_per_device = 8
     epochs = 3
     train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
     eval_steps = (int(49109 / (batch_size_per_device * 2)))
@@ -130,7 +130,8 @@ training_args = Seq2SeqTrainingArguments(
     local_rank=os.environ["LOCAL_RANK"],
 
 )
-
+train_dataset = train_dataset.select(range(100))
+valid_dataset = valid_dataset.select(range(100))
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
@@ -140,6 +141,7 @@ trainer = Seq2SeqTrainer(
     compute_metrics=compute_metrics,
     tokenizer=processor.feature_extractor,
 )
+
 
 processor.save_pretrained(training_args.output_dir)
 torch.cuda.empty_cache()

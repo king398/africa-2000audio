@@ -24,11 +24,11 @@ dataset = dataset.remove_columns(
      'audio_path_local', 'transcription'])
 
 model_path = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-medium-4epoch-1e-5-cosine-deepspeed"
-tokenizer = WhisperTokenizer.from_pretrained(model_path, language="English", task="transcribe")
-processor = WhisperProcessor.from_pretrained(model_path, language="English", task="transcribe")
+tokenizer = WhisperTokenizer.from_pretrained(model_path,language="english",task="transcribe")
+processor = WhisperProcessor.from_pretrained(model_path,language="english",task="transcribe")
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained(model_path)
-model = WhisperForConditionalGeneration.from_pretrained(f"{model_path}/checkpoint-1466").to(torch.device("cuda:1"))
+model = WhisperForConditionalGeneration.from_pretrained(f"{model_path}/checkpoint-2199").to(torch.device("cuda:1"))
 model.config.forced_decoder_ids = None
 model.config.suppress_tokens = []
 model.config.use_cache = False
@@ -60,8 +60,9 @@ for i, (input_feature, ID) in enumerate(tqdm(loader, total=len(loader))):
     predicted_ids = model.generate(input_feature)
     transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
     for id_one, transcript_one in zip(ID, transcription):
+        print(transcript_one)
         transcript_one = normalizer(transcript_one)
-        transcript_one = transcript_one.lower()
+        print(transcript_one)
         id_dict[id_one] = transcript_one
 
 sub_df = pd.DataFrame()
@@ -71,7 +72,7 @@ sub_df = sub_df.fillna('""')
 sub_df['transcript'] = sub_df['transcript'].replace(' ', '""')
 sub_df['transcript'] = sub_df['transcript'].replace('', '""')
 sub_df.to_csv(
-    "/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-medium-4epoch-1e-5-cosine-deepspeed.csv",
+    "/home/mithil/PycharmProjects/africa-2000audio/submission/whisper-medium-4epoch-1e-5-cosine-deepspeed-checkpoint-2199.csv",
     index=False)
 
 

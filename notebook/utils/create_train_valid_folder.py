@@ -16,4 +16,4 @@ def move(path):
 
 df["audio_path_local"] = df["audio_path_local"].apply(move)
 print(df)
-df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/data/train_hf/train/metadata.csv",index=False)
+df.to_csv("/home/mithil/PycharmProjects/africa-2000audio/data/train_hf/validation/metadata.csv",index=False)
