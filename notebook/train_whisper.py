@@ -2,17 +2,13 @@ import os
 import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
-from joblib import Parallel, delayed
-from statistics import mean
 import evaluate
 import torch
 from datasets import load_dataset, Audio
 from transformers import WhisperTokenizer, WhisperFeatureExtractor, WhisperProcessor, WhisperForConditionalGeneration, \
     Seq2SeqTrainer, Seq2SeqTrainingArguments, TrainerCallback
-import jiwer
 from transformers.models.whisper.english_normalizer import BasicTextNormalizer
-
-normalizer = BasicTextNormalizer()
+from peft import prepare_model_for_int8_training, LoraConfig, PeftModel, LoraModel, LoraConfig, get_peft_model
 
 warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
@@ -20,21 +16,21 @@ dataset = load_dataset("audiofolder",
                        )
 
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
-dataset['train'] = dataset['train'].select(range(1000))
-dataset['validation'] = dataset['validation'].select(range(100))
 metric = evaluate.load("wer")
 
 
 class CFG:
-    batch_size_per_device = 4
+    batch_size_per_device = 16
     epochs = 3
-    train_steps = (int(49109 / (batch_size_per_device * 2))) * epochs
+    train_steps = (int(52161 / (batch_size_per_device * 2))) * epochs
+    eval_steps = int(52161 / (batch_size_per_device * 2))
     model = "openai/whisper-large-v2"
+    output_dir = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3"
 
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained(CFG.model)
-tokenizer = WhisperTokenizer.from_pretrained(CFG.model, language="English", task="transcribe")
-processor = WhisperProcessor.from_pretrained(CFG.model, language="English", task="transcribe")
+tokenizer = WhisperTokenizer.from_pretrained(CFG.model, )
+processor = WhisperProcessor.from_pretrained(CFG.model)
 
 
 def prepare_dataset(batch):
@@ -63,10 +59,10 @@ def compute_metrics(pred):
     # we do not want to group tokens when computing the metrics
     pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
+    print(pred_str[:5])
+    print(label_str[:5])
 
-    # pred_normalized = [normalizer(t) for t in pred_str]
-
-    wer = jiwer.wer(label_str, pred_str) * 100
+    wer = metric.compute(predictions=pred_str, references=label_str) * 100
     print("WER: ", wer)
 
     return {"wer": wer}
@@ -101,63 +97,107 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
 
 def normalize_text(batch):
-    batch["transcription"] = normalizer(batch["transcription"])
+    batch["transcription"] = batch["transcription"]
     return batch
 
 
-#dataset = dataset['train'].map(normalize_text)
-dataset = dataset.map(prepare_dataset, writer_batch_size=64, num_proc=32)
-train_dataset = dataset['train']
-valid_dataset = dataset['validation']
+dataset['train'] = dataset['train'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
+                                        cache_file_name="train_hf_cache.arrow")
+
+dataset['validation'] = dataset['validation'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
+                                                  cache_file_name="val_hf_cache.arrow")
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
-model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
+model = WhisperForConditionalGeneration.from_pretrained(CFG.model, load_in_8bit=True, device_map="auto")
+model.hf_device_map = {"": torch.device("cuda")}
+setattr(model, 'model_parallel', True)
+setattr(model, 'is_parall1elizable', True)
 
 model.config.forced_decoder_ids = None
 model.config.suppress_tokens = []
-model.config.use_cache = False
 
+model = prepare_model_for_int8_training(model, )
+config = LoraConfig(r=32,
+                    lora_alpha=64,
+                    target_modules=".*decoder.*(self_attn|encoder_attn).*(q_proj|v_proj)$",  # ["q_proj", "v_proj"],
+                    lora_dropout=0.05,
+                    bias="none")
+
+model = get_peft_model(model, config)
+model.print_trainable_parameters()
 training_args = Seq2SeqTrainingArguments(
-    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed",
+    output_dir=CFG.output_dir,
     # change to a repo name of your choice dsn_afrispeech
     per_device_train_batch_size=CFG.batch_size_per_device,
-    learning_rate=1e-5,
-    gradient_checkpointing=True,
+    learning_rate=3e-5,
     evaluation_strategy="epoch",
     per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
     generation_max_length=448,
     report_to=["tensorboard", "wandb"],
-    load_best_model_at_end=True,
-    metric_for_best_model="wer",
     greater_is_better=False,
     push_to_hub=False,
-    num_train_epochs=CFG.epochs,
-    gradient_accumulation_steps=6,
-    deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
+    gradient_accumulation_steps=1,
+    fp16=True,
+    # fp16_full_eval=True,
 
     seed=42,
     dataloader_num_workers=32,
-    logging_steps=50,
+    logging_steps=100,
     save_strategy="epoch",
-    fp16=True,
     dataloader_pin_memory=True,
 
-    fp16_full_eval=True,
     save_total_limit=1,
-    lr_scheduler_type="cosine",
-
+    remove_unused_columns=False,
+    # required as the PeftModel forward doesn't have the signature of the wrapped model's forward
+    label_names=["labels"],
+    save_steps=CFG.eval_steps,
+    num_train_epochs=CFG.epochs,
+    tf32=True,
 )
+from transformers import Seq2SeqTrainer, TrainerCallback, TrainingArguments, TrainerState, TrainerControl
+from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+
+
+# This callback helps to save only the adapter weights and remove the base model weights.
+class SavePeftModelCallback(TrainerCallback):
+    def on_save(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            **kwargs,
+    ):
+        checkpoint_folder = os.path.join(args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
+
+        peft_model_path = os.path.join(checkpoint_folder, "adapter_model")
+        kwargs["model"].save_pretrained(peft_model_path)
+
+        pytorch_model_path = os.path.join(checkpoint_folder, "pytorch_model.bin")
+        if os.path.exists(pytorch_model_path):
+            os.remove(pytorch_model_path)
+        return control
+
+
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=valid_dataset,
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['validation'],
     data_collator=data_collator,
-    compute_metrics=compute_metrics,
     tokenizer=processor.feature_extractor,
+    callbacks=[SavePeftModelCallback],
+    # optimizers=(adam_bnb_optim, None),
+    # compute_metrics=compute_metrics,
+
 )
 
+model.config.use_cache = False
+# trainer.optimizer = adam_bnb_optim
 processor.save_pretrained(training_args.output_dir)
 torch.cuda.empty_cache()
 trainer.train()
 trainer.save_model(training_args.output_dir)
+repo_id = f"{CFG.output_dir.split('/')[-1]}"
+model.push_to_hub(repo_id, use_auth_token=True, private=True)
+trainer.push_to_hub(repo_id, use_auth_token=True, private=True)
+processor.push_to_hub(repo_id, use_auth_token=True, private=True)
