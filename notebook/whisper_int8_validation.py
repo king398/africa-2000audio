@@ -13,14 +13,6 @@ from torch.utils.data import DataLoader
 from peft import PeftConfig
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-peft_model_id = "model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3/checkpoint-9780/adapter_model"  # Use the same model ID as before.
-peft_config = PeftConfig.from_pretrained(peft_model_id)
-
-model = WhisperForConditionalGeneration.from_pretrained(
-    peft_config.base_model_name_or_path, load_in_8bit=True, device_map="auto"
-)
-model = PeftModel.from_pretrained(model, peft_model_id)
-model.config.use_cache = True
 warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
                        data_dir="/home/mithil/PycharmProjects/africa-2000audio/data/train_hf",
@@ -28,11 +20,17 @@ dataset = load_dataset("audiofolder",
 
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 metric = evaluate.load("wer")
-processor = WhisperProcessor.from_pretrained("model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed")
-feature_extractor = WhisperFeatureExtractor.from_pretrained("model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed")
-tokenizer = WhisperTokenizer.from_pretrained("model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed")
+model_id = "model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-full-fp16-training"  # Use the same model ID as before.
 
+model = WhisperForConditionalGeneration.from_pretrained(
+    model_id,
+).cuda()
 
+processor = WhisperProcessor.from_pretrained(model_id,
+                                             )
+tokenizer = WhisperTokenizer.from_pretrained(model_id,
+                                             )
+feature_extractor = processor.feature_extractor
 def prepare_dataset(batch):
     audio = batch["audio"]
 
@@ -89,11 +87,8 @@ for step, batch in enumerate(tqdm(valid_loader)):
         with torch.no_grad():
             generated_tokens = (
                 model.generate(
-                    input_features=batch["input_features"].to("cuda"),
-                    forced_decoder_ids=forced_decoder_ids,
-                    max_new_tokens=448,
-                    num_beams=1,
-                    do_sample=False
+                    batch["input_features"].to("cuda"),
+
 
                 )
                 .cpu()

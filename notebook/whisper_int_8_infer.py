@@ -6,7 +6,6 @@ from transformers import (
     WhisperTokenizer,
     WhisperProcessor,
 )
-from peft import PeftModel, PeftConfig
 import torch
 from tqdm import tqdm
 import warnings
@@ -19,7 +18,7 @@ warnings.filterwarnings("ignore")
 from torch.utils.data import DataLoader
 from transformers.models.whisper.english_normalizer import BasicTextNormalizer
 
-language = "English"
+language = "en"
 task = "transcribe"
 test_df = pd.read_csv("/home/mithil/PycharmProjects/africa-2000audio/data/test_metadata.csv")
 test_df['audio'] = test_df['audio_paths'].replace('/AfriSpeech-100/',
@@ -32,18 +31,19 @@ dev_df['audio'] = dev_df['audio_paths'].replace('/AfriSpeech-100/',
                                                 regex=True)
 
 df = pd.concat([test_df, dev_df])
+df = df[:len(df) // 2]
 id_path_dict = dict(zip(df['ID'], df['audio']))
 
-peft_model_id = "model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3/checkpoint-9780/adapter_model"  # Use the same model ID as before.
-peft_config = PeftConfig.from_pretrained(peft_model_id)
+model_id = "model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-full-fp16-training"  # Use the same model ID as before.
 
 model = WhisperForConditionalGeneration.from_pretrained(
-    peft_config.base_model_name_or_path, load_in_8bit=True, device_map="auto"
-)
-model = PeftModel.from_pretrained(model, peft_model_id)
-processor = WhisperProcessor.from_pretrained("model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3",
+    model_id,
+).cuda()
+model.config.use_cache = True
+
+processor = WhisperProcessor.from_pretrained(model_id,
                                              language=language, task=task)
-tokenizer = WhisperTokenizer.from_pretrained("model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3",
+tokenizer = WhisperTokenizer.from_pretrained(model_id,
                                              language=language, task=task)
 
 feature_extractor = processor.feature_extractor
@@ -108,13 +108,18 @@ for i, batch in tqdm(enumerate(valid_loader), total=len(valid_loader)):
         with torch.no_grad():
             generated_tokens = model.generate(
                 batch["input_features"].to("cuda"),
-                ).cpu().numpy()
+                forced_decoder_ids=forced_decoder_ids,
+                max_new_tokens=448,
+                num_beams=1,
+                do_sample=False
+            ).cpu().numpy()
             decoded_preds = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
             for id, pred in zip(batch["ID"], decoded_preds):
                 submission = pd.concat([submission, pd.DataFrame({"ID": id, "transcript": pred}, index=[0])],
                                        ignore_index=True)
 
-submission.to_csv("submission/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3.csv", index=False)
+submission.to_csv("submission/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3-full-fp16.csv", index=False)
 normalizer = BasicTextNormalizer()
 submission["transcript"] = submission["transcript"].apply(normalizer)
-submission.to_csv("submission/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3-cleaned.csv", index=False)
+submission.to_csv("submission/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3-cleaned-full-fp16.csv",
+                  index=False)
