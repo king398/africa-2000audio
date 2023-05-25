@@ -7,8 +7,6 @@ import torch
 from datasets import load_dataset, Audio
 from transformers import WhisperTokenizer, WhisperFeatureExtractor, WhisperProcessor, WhisperForConditionalGeneration, \
     Seq2SeqTrainer, Seq2SeqTrainingArguments, TrainerCallback
-from transformers.models.whisper.english_normalizer import BasicTextNormalizer
-from peft import prepare_model_for_int8_training, LoraConfig, PeftModel, LoraModel, LoraConfig, get_peft_model
 
 warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
@@ -20,12 +18,12 @@ metric = evaluate.load("wer")
 
 
 class CFG:
-    batch_size_per_device = 16
+    batch_size_per_device = 4
     epochs = 3
     train_steps = (int(52161 / (batch_size_per_device * 2))) * epochs
     eval_steps = int(52161 / (batch_size_per_device * 2))
     model = "openai/whisper-large-v2"
-    output_dir = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3"
+    output_dir = "/home/mithil/PycharmProjects/africa-2000audio/model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-full-fp16-training"
 
 
 feature_extractor = WhisperFeatureExtractor.from_pretrained(CFG.model)
@@ -101,34 +99,23 @@ def normalize_text(batch):
     return batch
 
 
+dataset = dataset.map(normalize_text)
 dataset['train'] = dataset['train'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
-                                        cache_file_name="train_hf_cache.arrow")
+                                        cache_file_name="cache/train_hf_cache.arrow")
 
 dataset['validation'] = dataset['validation'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
-                                                  cache_file_name="val_hf_cache.arrow")
+                                                  cache_file_name="cache/val_hf_cache.arrow")
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
-model = WhisperForConditionalGeneration.from_pretrained(CFG.model, load_in_8bit=True, device_map="auto")
-model.hf_device_map = {"": torch.device("cuda")}
-setattr(model, 'model_parallel', True)
-setattr(model, 'is_parall1elizable', True)
+model = WhisperForConditionalGeneration.from_pretrained(CFG.model)
 
 model.config.forced_decoder_ids = None
 model.config.suppress_tokens = []
 
-model = prepare_model_for_int8_training(model, )
-config = LoraConfig(r=32,
-                    lora_alpha=64,
-                    target_modules=".*decoder.*(self_attn|encoder_attn).*(q_proj|v_proj)$",  # ["q_proj", "v_proj"],
-                    lora_dropout=0.05,
-                    bias="none")
-
-model = get_peft_model(model, config)
-model.print_trainable_parameters()
 training_args = Seq2SeqTrainingArguments(
     output_dir=CFG.output_dir,
     # change to a repo name of your choice dsn_afrispeech
     per_device_train_batch_size=CFG.batch_size_per_device,
-    learning_rate=3e-5,
+    learning_rate=1e-5,
     evaluation_strategy="epoch",
     per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
@@ -136,9 +123,9 @@ training_args = Seq2SeqTrainingArguments(
     report_to=["tensorboard", "wandb"],
     greater_is_better=False,
     push_to_hub=False,
-    gradient_accumulation_steps=1,
+    gradient_accumulation_steps=4,
     fp16=True,
-    # fp16_full_eval=True,
+    fp16_full_eval=True,
 
     seed=42,
     dataloader_num_workers=32,
@@ -153,6 +140,10 @@ training_args = Seq2SeqTrainingArguments(
     save_steps=CFG.eval_steps,
     num_train_epochs=CFG.epochs,
     tf32=True,
+    gradient_checkpointing=True,
+    deepspeed="ds_config.json",
+    load_best_model_at_end=True,
+    metric_for_best_model="wer",
 )
 from transformers import Seq2SeqTrainer, TrainerCallback, TrainingArguments, TrainerState, TrainerControl
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
@@ -187,7 +178,7 @@ trainer = Seq2SeqTrainer(
     tokenizer=processor.feature_extractor,
     callbacks=[SavePeftModelCallback],
     # optimizers=(adam_bnb_optim, None),
-    # compute_metrics=compute_metrics,
+    compute_metrics=compute_metrics,
 
 )
 
@@ -199,5 +190,4 @@ trainer.train()
 trainer.save_model(training_args.output_dir)
 repo_id = f"{CFG.output_dir.split('/')[-1]}"
 model.push_to_hub(repo_id, use_auth_token=True, private=True)
-trainer.push_to_hub(repo_id, use_auth_token=True, private=True)
 processor.push_to_hub(repo_id, use_auth_token=True, private=True)

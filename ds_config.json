@@ -10,12 +10,19 @@
   },
   "zero_optimization": {
     "stage": 2,
+
     "allgather_partitions": true,
     "allgather_bucket_size": 5e8,
     "overlap_comm": true,
     "reduce_scatter": true,
-    "reduce_bucket_size": 5e8,
+    "reduce_bucket_size": 9e8,
     "contiguous_gradients": true
+  },
+  "optimizer": {
+    "type": "AdamW",
+    "params": {
+      "lr": 1e-5
+    }
   },
   "train_batch_size": "auto",
   "train_micro_batch_size_per_gpu": "auto",
@@ -33,4 +40,3 @@
     "output_file": "flops_second.json"
   }
 }
-

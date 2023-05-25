@@ -1,16 +1,21 @@
-# This is a sample Python script.
+import timm
+from torch import nn
+import torch
+from torch.cuda.amp import autocast
+import time
+from tqdm.auto import tqdm
+from accelerate import Accelerator
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+accelerator = Accelerator(mixed_precision="fp8")
 
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+p = timm.create_model("resnet50", pretrained=False)
+random_tensor = torch.rand(32, 3, 384, 384)
+p, random_tensor = accelerator.prepare(p, random_tensor)
+# warmup run
+for i in range(10):
+        p(random_tensor)
+# main run
+start = time.time()
+for i in tqdm(range(1000), disable=not accelerator.is_local_main_process, ):
+        p(random_tensor)
+print(f"Time taken in seconds: {time.time() - start}")

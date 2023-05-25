@@ -1,0 +1,1001 @@
+
+-------------------------- DeepSpeed Flops Profiler --------------------------
+Profile Summary at step 11:
+Notations:
+data parallel size (dp_size), model parallel size(mp_size),
+number of parameters (params), number of multiply-accumulate operations(MACs),
+number of floating-point operations (flops), floating-point operations per second (FLOPS),
+fwd latency (forward propagation latency), bwd latency (backward propagation latency),
+step (weights update latency), iter latency (sum of fwd, bwd and step latency)
+
+world size:                                                   2       
+data parallel size:                                           2       
+model parallel size:                                          1       
+batch size per GPU:                                           8       
+params per gpu:                                               763.86 M
+params of model = params per GPU * mp_size:                   763.86 M
+fwd MACs per GPU:                                             5337.27 GMACs
+fwd flops per GPU:                                            10684.91 G
+fwd flops of model = fwd flops per GPU * mp_size:             10684.91 G
+fwd latency:                                                  231.75 ms
+fwd FLOPS per GPU = fwd flops per GPU / fwd latency:          46.1 TFLOPS
+bwd latency:                                                  684.19 ms
+bwd FLOPS per GPU = 2 * fwd flops per GPU / bwd latency:      31.23 TFLOPS
+fwd+bwd FLOPS per GPU = 3 * fwd flops per GPU / (fwd+bwd latency):   35.0 TFLOPS
+step latency:                                                 219.57 ms
+iter latency:                                                 1.14 s  
+FLOPS per GPU = 3 * fwd flops per GPU / iter latency:         28.23 TFLOPS
+samples/second:                                               14.09   
+
+----------------------------- Aggregated Profile per GPU -----------------------------
+Top 1 modules in terms of params, MACs or fwd latency at different model depths:
+depth 0:
+    params      - {'WhisperForConditionalGeneration': '763.86 M'}
+    MACs        - {'WhisperForConditionalGeneration': '5337.27 GMACs'}
+    fwd latency - {'WhisperForConditionalGeneration': '231.61 ms'}
+depth 1:
+    params      - {'WhisperModel': '763.86 M'}
+    MACs        - {'WhisperModel': '5317.3 GMACs'}
+    fwd latency - {'WhisperModel': '230.78 ms'}
+depth 2:
+    params      - {'WhisperDecoder': '456.64 M'}
+    MACs        - {'WhisperEncoder': '4552.26 GMACs'}
+    fwd latency - {'WhisperEncoder': '177.98 ms'}
+depth 3:
+    params      - {'ModuleList': '705.36 M'}
+    MACs        - {'ModuleList': '5273.66 GMACs'}
+    fwd latency - {'ModuleList': '224.72 ms'}
+depth 4:
+    params      - {'WhisperDecoderLayer': '403.07 M'}
+    MACs        - {'WhisperEncoderLayer': '4508.61 GMACs'}
+    fwd latency - {'WhisperEncoderLayer': '174.24 ms'}
+depth 5:
+    params      - {'Linear': '402.9 M'}
+    MACs        - {'WhisperAttention': '2782.04 GMACs'}
+    fwd latency - {'WhisperAttention': '141.17 ms'}
+
+------------------------------ Detailed Profile per GPU ------------------------------
+Each module profile is listed after its name in the following order: 
+params, percentage of total params, MACs, percentage of total MACs, fwd latency, percentage of total fwd latency, fwd FLOPS
+
+Note: 1. A module can have torch.nn.module or torch.nn.functional to compute logits (e.g. CrossEntropyLoss). They are not counted as submodules, thus not to be printed out. However they make up the difference between a parent's MACs (or latency) and the sum of its submodules'.
+2. Number of floating-point operations is a theoretical estimation, thus FLOPS computed using that could be larger than the maximum system throughput.
+3. The fwd latency listed in the top module's profile is directly captured at the module forward function in PyTorch, thus it's less than the fwd latency shown above which is captured in DeepSpeed.
+
+WhisperForConditionalGeneration(
+  763.86 M, 100.00% Params, 5337.27 GMACs, 100.00% MACs, 231.61 ms, 100.00% latency, 46.13 TFLOPS, 
+  (model): WhisperModel(
+    763.86 M, 100.00% Params, 5317.3 GMACs, 99.63% MACs, 230.78 ms, 99.64% latency, 46.13 TFLOPS, 
+    (encoder): WhisperEncoder(
+      307.22 M, 40.22% Params, 4552.26 GMACs, 85.29% MACs, 177.98 ms, 76.84% latency, 51.21 TFLOPS, 
+      (conv1): Conv1d(246.78 k, 0.03% Params, 5.9 GMACs, 0.11% MACs, 425.1 us, 0.18% latency, 27.81 TFLOPS, 80, 1024, kernel_size=(3,), stride=(1,), padding=(1,))
+      (conv2): Conv1d(3.15 M, 0.41% Params, 37.75 GMACs, 0.71% MACs, 733.85 us, 0.32% latency, 102.9 TFLOPS, 1024, 1024, kernel_size=(3,), stride=(2,), padding=(1,))
+      (embed_positions): Embedding(1.54 M, 0.20% Params, 0 MACs, 0.00% MACs, 0, 0.00% latency, 0.0 FLOPS, 1500, 1024)
+      (layers): ModuleList(
+        (0): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.0 ms, 3.02% latency, 53.76 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.13 ms, 1.78% latency, 42.27 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 215.05 us, 0.09% latency, 117.02 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 217.91 us, 0.09% latency, 115.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 252.49 us, 0.11% latency, 99.67 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 229.84 us, 0.10% latency, 109.49 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 235.32 us, 0.10% latency, 261.09 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 244.14 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 697.37 us, 0.30% latency, 144.35 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 662.33 us, 0.29% latency, 151.98 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 225.31 us, 0.10% latency, 272.7 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (1): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.82 ms, 2.94% latency, 55.15 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.08 ms, 1.76% latency, 42.79 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 210.76 us, 0.09% latency, 119.4 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.68 us, 0.10% latency, 113.01 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 225.31 us, 0.10% latency, 111.7 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 226.5 us, 0.10% latency, 111.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 231.74 us, 0.10% latency, 265.12 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 257.49 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 693.32 us, 0.30% latency, 145.19 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 657.08 us, 0.28% latency, 153.2 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 229.12 us, 0.10% latency, 268.16 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (2): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.9 ms, 2.98% latency, 54.48 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.19 ms, 1.81% latency, 41.71 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 208.62 us, 0.09% latency, 120.63 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 221.01 us, 0.10% latency, 113.87 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.92 us, 0.10% latency, 112.89 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 231.27 us, 0.10% latency, 108.82 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 223.64 us, 0.10% latency, 274.73 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 237.94 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 691.41 us, 0.30% latency, 145.59 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 656.13 us, 0.28% latency, 153.42 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 221.25 us, 0.10% latency, 277.69 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (3): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.82 ms, 2.94% latency, 55.15 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.12 ms, 1.78% latency, 42.44 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 207.66 us, 0.09% latency, 121.19 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.16 us, 0.10% latency, 112.77 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 236.75 us, 0.10% latency, 106.3 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 234.37 us, 0.10% latency, 107.38 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 223.88 us, 0.10% latency, 274.44 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 239.85 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 690.46 us, 0.30% latency, 145.79 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 658.99 us, 0.28% latency, 152.75 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 223.16 us, 0.10% latency, 275.32 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (4): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.84 ms, 2.95% latency, 54.96 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.12 ms, 1.78% latency, 42.39 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 225.07 us, 0.10% latency, 111.81 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.82 us, 0.09% latency, 114.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.88 us, 0.10% latency, 112.41 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 235.8 us, 0.10% latency, 106.73 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 222.92 us, 0.10% latency, 275.61 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 260.35 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 688.79 us, 0.30% latency, 146.14 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 658.51 us, 0.28% latency, 152.86 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 222.92 us, 0.10% latency, 275.61 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (5): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.12 ms, 3.07% latency, 52.86 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.25 ms, 1.84% latency, 41.08 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 206.71 us, 0.09% latency, 121.75 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 212.43 us, 0.09% latency, 118.47 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 226.02 us, 0.10% latency, 111.34 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 273.94 us, 0.12% latency, 91.87 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 222.92 us, 0.10% latency, 275.61 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 254.63 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 712.63 us, 0.31% latency, 141.26 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 676.87 us, 0.29% latency, 148.72 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 238.66 us, 0.10% latency, 257.44 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (6): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.07 ms, 3.05% latency, 53.19 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.23 ms, 1.83% latency, 41.27 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 224.83 us, 0.10% latency, 111.93 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 233.17 us, 0.10% latency, 107.93 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 245.57 us, 0.11% latency, 102.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 257.73 us, 0.11% latency, 97.64 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 236.27 us, 0.10% latency, 260.04 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 244.62 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 709.3 us, 0.31% latency, 141.92 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 672.1 us, 0.29% latency, 149.77 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 240.09 us, 0.10% latency, 255.91 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (7): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 8.67 ms, 3.74% latency, 43.37 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 5.85 ms, 2.53% latency, 29.86 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 214.82 us, 0.09% latency, 117.15 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 225.78 us, 0.10% latency, 111.46 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 230.55 us, 0.10% latency, 109.16 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 271.08 us, 0.12% latency, 92.83 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 228.17 us, 0.10% latency, 269.28 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 254.87 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 711.44 us, 0.31% latency, 141.49 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 672.82 us, 0.29% latency, 149.61 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 242.95 us, 0.10% latency, 252.89 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (8): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.91 ms, 2.98% latency, 54.47 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.12 ms, 1.78% latency, 42.36 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 225.31 us, 0.10% latency, 111.7 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.44 us, 0.10% latency, 113.13 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 231.27 us, 0.10% latency, 108.82 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 243.19 us, 0.10% latency, 103.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 224.59 us, 0.10% latency, 273.56 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 252.49 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 697.85 us, 0.30% latency, 144.25 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 667.1 us, 0.29% latency, 150.9 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 224.11 us, 0.10% latency, 274.15 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (9): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.0 ms, 3.02% latency, 53.71 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.16 ms, 1.80% latency, 41.98 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 213.38 us, 0.09% latency, 117.94 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.87 us, 0.09% latency, 114.98 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 231.27 us, 0.10% latency, 108.82 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 248.43 us, 0.11% latency, 101.3 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 229.12 us, 0.10% latency, 268.16 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 271.8 us, 0.12% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 716.45 us, 0.31% latency, 140.5 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 666.86 us, 0.29% latency, 150.95 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 232.46 us, 0.10% latency, 264.31 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (10): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.41 ms, 3.20% latency, 50.79 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.63 ms, 2.00% latency, 37.71 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 215.53 us, 0.09% latency, 116.76 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.58 us, 0.09% latency, 114.61 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 256.3 us, 0.11% latency, 98.19 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 242.71 us, 0.10% latency, 103.69 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 227.21 us, 0.10% latency, 270.41 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 243.43 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 696.42 us, 0.30% latency, 144.54 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 660.18 us, 0.29% latency, 152.48 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 234.6 us, 0.10% latency, 261.89 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (11): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 8.02 ms, 3.46% latency, 46.9 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.11 ms, 1.77% latency, 42.53 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 213.15 us, 0.09% latency, 118.07 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.35 us, 0.09% latency, 114.73 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 229.6 us, 0.10% latency, 109.61 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 220.54 us, 0.10% latency, 114.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 228.17 us, 0.10% latency, 269.28 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 364.54 us, 0.16% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 1.44 ms, 0.62% latency, 69.79 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 862.36 us, 0.37% latency, 116.73 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 267.27 us, 0.12% latency, 229.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (12): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.98 ms, 3.01% latency, 53.92 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.16 ms, 1.80% latency, 41.95 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.68 us, 0.10% latency, 113.01 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.64 us, 0.10% latency, 112.53 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 220.3 us, 0.10% latency, 114.23 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 232.7 us, 0.10% latency, 108.15 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 221.73 us, 0.10% latency, 277.09 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 232.22 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 698.33 us, 0.30% latency, 144.15 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 662.09 us, 0.29% latency, 152.04 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 224.35 us, 0.10% latency, 273.86 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (13): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.0 ms, 3.02% latency, 53.73 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.17 ms, 1.80% latency, 41.91 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 206.23 us, 0.09% latency, 122.03 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 297.78 us, 0.13% latency, 84.51 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 228.17 us, 0.10% latency, 110.3 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 228.88 us, 0.10% latency, 109.95 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 214.1 us, 0.09% latency, 286.97 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 259.4 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 705.24 us, 0.30% latency, 142.74 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 745.06 us, 0.32% latency, 135.11 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 224.59 us, 0.10% latency, 273.56 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (14): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.31 ms, 3.16% latency, 51.45 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.23 ms, 1.82% latency, 41.34 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 216.25 us, 0.09% latency, 116.38 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 217.2 us, 0.09% latency, 115.87 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 231.98 us, 0.10% latency, 108.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 239.37 us, 0.10% latency, 105.13 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 226.74 us, 0.10% latency, 270.98 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 242.23 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 978.95 us, 0.42% latency, 102.83 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 689.74 us, 0.30% latency, 145.94 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 218.63 us, 0.09% latency, 281.02 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (15): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.34 ms, 3.17% latency, 51.21 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.32 ms, 1.86% latency, 40.45 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 215.05 us, 0.09% latency, 117.02 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 210.52 us, 0.09% latency, 119.54 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 229.12 us, 0.10% latency, 109.84 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.64 us, 0.10% latency, 112.53 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 218.63 us, 0.09% latency, 281.02 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 238.9 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 690.46 us, 0.30% latency, 145.79 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 825.88 us, 0.36% latency, 121.89 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 229.84 us, 0.10% latency, 267.32 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (16): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 8.58 ms, 3.71% latency, 43.82 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 5.71 ms, 2.47% latency, 30.59 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.39 us, 0.09% latency, 115.23 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.87 us, 0.09% latency, 114.98 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.15 us, 0.09% latency, 115.36 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 235.56 us, 0.10% latency, 106.84 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 224.11 us, 0.10% latency, 274.15 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 287.53 us, 0.12% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 694.99 us, 0.30% latency, 144.84 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 665.66 us, 0.29% latency, 151.22 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 238.42 us, 0.10% latency, 257.7 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (17): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.14 ms, 3.08% latency, 52.71 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.26 ms, 1.84% latency, 40.98 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 213.15 us, 0.09% latency, 118.07 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 242.95 us, 0.10% latency, 103.59 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 229.12 us, 0.10% latency, 109.84 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 236.03 us, 0.10% latency, 106.62 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 220.06 us, 0.10% latency, 279.2 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 236.99 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 695.71 us, 0.30% latency, 144.69 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 674.96 us, 0.29% latency, 149.14 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 236.99 us, 0.10% latency, 259.25 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (18): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.98 ms, 3.01% latency, 53.9 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.12 ms, 1.78% latency, 42.36 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 208.38 us, 0.09% latency, 120.77 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.87 us, 0.09% latency, 114.98 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 236.27 us, 0.10% latency, 106.51 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 238.18 us, 0.10% latency, 105.66 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 222.92 us, 0.10% latency, 275.61 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 250.1 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 779.15 us, 0.34% latency, 129.2 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 659.7 us, 0.28% latency, 152.59 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 242.23 us, 0.10% latency, 253.64 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (19): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.21 ms, 3.11% latency, 52.17 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.29 ms, 1.85% latency, 40.73 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 216.01 us, 0.09% latency, 116.5 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 215.29 us, 0.09% latency, 116.89 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 229.36 us, 0.10% latency, 109.72 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 232.46 us, 0.10% latency, 108.26 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 222.68 us, 0.10% latency, 275.91 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 244.38 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 690.7 us, 0.30% latency, 145.74 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 838.04 us, 0.36% latency, 120.12 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 227.93 us, 0.10% latency, 269.56 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (20): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 8.26 ms, 3.57% latency, 45.51 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 5.14 ms, 2.22% latency, 33.96 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 209.09 us, 0.09% latency, 120.36 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.68 us, 0.10% latency, 113.01 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.16 us, 0.10% latency, 112.77 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 353.81 us, 0.15% latency, 71.13 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 263.69 us, 0.11% latency, 233.0 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 240.8 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 697.85 us, 0.30% latency, 144.25 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 754.36 us, 0.33% latency, 133.44 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 228.64 us, 0.10% latency, 268.72 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (21): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 7.08 ms, 3.06% latency, 53.13 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.3 ms, 1.86% latency, 40.58 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 215.77 us, 0.09% latency, 116.63 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 211.48 us, 0.09% latency, 119.0 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.64 us, 0.10% latency, 112.53 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 369.31 us, 0.16% latency, 68.14 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 241.99 us, 0.10% latency, 253.89 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 239.37 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 696.66 us, 0.30% latency, 144.49 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 661.61 us, 0.29% latency, 152.15 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 225.07 us, 0.10% latency, 272.99 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (22): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.92 ms, 2.99% latency, 54.36 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.11 ms, 1.77% latency, 42.49 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 209.81 us, 0.09% latency, 119.95 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 228.4 us, 0.10% latency, 110.18 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 231.03 us, 0.10% latency, 108.93 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 239.13 us, 0.10% latency, 105.24 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 246.52 us, 0.11% latency, 249.22 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 239.13 us, 0.10% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 696.18 us, 0.30% latency, 144.59 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 665.66 us, 0.29% latency, 151.22 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 233.89 us, 0.10% latency, 262.69 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (23): WhisperEncoderLayer(
+          12.6 M, 1.65% Params, 187.86 GMACs, 3.52% MACs, 6.86 ms, 2.96% latency, 54.84 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 87.2 GMACs, 1.63% MACs, 4.1 ms, 1.77% latency, 42.63 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 210.05 us, 0.09% latency, 119.81 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.15 us, 0.09% latency, 115.36 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 228.88 us, 0.10% latency, 109.95 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 234.37 us, 0.10% latency, 107.38 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 228.64 us, 0.10% latency, 268.72 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 257.02 us, 0.11% latency, 0.0 FLOPS, )
+          (fc1): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 699.52 us, 0.30% latency, 143.9 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 50.33 GMACs, 0.94% MACs, 654.22 us, 0.28% latency, 153.87 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 222.21 us, 0.10% latency, 276.5 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 229.6 us, 0.10% latency, 267.6 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+    )
+    (decoder): WhisperDecoder(
+      456.64 M, 59.78% Params, 765.04 GMACs, 14.33% MACs, 52.71 ms, 22.76% latency, 29.04 TFLOPS, 
+      (embed_tokens): Embedding(53.11 M, 6.95% Params, 0 MACs, 0.00% MACs, 71.29 us, 0.03% latency, 0.0 FLOPS, 51864, 1024, padding_idx=50256)
+      (embed_positions): WhisperPositionalEmbedding(458.75 k, 0.06% Params, 0 MACs, 0.00% MACs, 27.89 us, 0.01% latency, 0.0 FLOPS, 448, 1024)
+      (layers): ModuleList(
+        (0): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.23 ms, 0.96% latency, 28.57 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 591.04 us, 0.26% latency, 5.46 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.53 us, 0.03% latency, 11.02 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.71 us, 0.03% latency, 11.65 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 82.73 us, 0.04% latency, 9.53 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.95 us, 0.03% latency, 11.6 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 38.39 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 58.41 us, 0.03% latency, 32.96 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 1.01 ms, 0.44% latency, 53.47 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.39 us, 0.09% latency, 115.23 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 226.02 us, 0.10% latency, 111.34 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 97.04 us, 0.04% latency, 8.13 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.72 us, 0.03% latency, 10.84 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 48.4 us, 0.02% latency, 39.78 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 85.83 us, 0.04% latency, 36.75 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 103.71 us, 0.04% latency, 30.41 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 46.25 us, 0.02% latency, 41.62 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (1): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.13 ms, 0.92% latency, 29.96 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 606.06 us, 0.26% latency, 5.32 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 56.51 us, 0.02% latency, 13.95 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.95 us, 0.03% latency, 11.6 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.96 us, 0.03% latency, 10.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.48 us, 0.03% latency, 10.88 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 42.92 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 50.78 us, 0.02% latency, 37.91 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 918.87 us, 0.40% latency, 59.02 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 204.8 us, 0.09% latency, 122.88 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 221.01 us, 0.10% latency, 113.87 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.95 us, 0.03% latency, 11.6 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.29 us, 0.03% latency, 11.06 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.63 us, 0.02% latency, 44.12 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 83.21 us, 0.04% latency, 37.91 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 112.3 us, 0.05% latency, 28.09 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.35 us, 0.02% latency, 43.41 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (2): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.07 ms, 0.89% latency, 30.87 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 556.71 us, 0.24% latency, 5.8 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 57.46 us, 0.02% latency, 13.72 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.05 us, 0.03% latency, 11.1 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 74.63 us, 0.03% latency, 10.57 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.19 us, 0.03% latency, 11.56 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 39.1 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 51.26 us, 0.02% latency, 37.56 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 919.34 us, 0.40% latency, 58.99 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 210.76 us, 0.09% latency, 119.4 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 221.97 us, 0.10% latency, 113.38 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.23 us, 0.03% latency, 11.73 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.53 us, 0.03% latency, 11.02 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 45.3 us, 0.02% latency, 42.5 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 87.02 us, 0.04% latency, 36.24 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 107.53 us, 0.05% latency, 29.33 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.58 us, 0.02% latency, 43.18 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (3): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.08 ms, 0.90% latency, 30.65 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 566.96 us, 0.24% latency, 5.69 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 59.13 us, 0.03% latency, 13.34 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.57 us, 0.03% latency, 12.03 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 74.39 us, 0.03% latency, 10.6 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.0 us, 0.03% latency, 11.77 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 40.53 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.83 us, 0.02% latency, 38.63 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 912.67 us, 0.39% latency, 59.42 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 206.47 us, 0.09% latency, 121.89 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 226.5 us, 0.10% latency, 111.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.57 us, 0.03% latency, 12.03 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.62 us, 0.03% latency, 11.33 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 45.3 us, 0.02% latency, 42.5 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 86.78 us, 0.04% latency, 36.34 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 104.19 us, 0.04% latency, 30.27 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 46.97 us, 0.02% latency, 40.99 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (4): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.07 ms, 0.89% latency, 30.86 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 546.22 us, 0.24% latency, 5.91 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 59.13 us, 0.03% latency, 13.34 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.61 us, 0.03% latency, 12.2 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 73.19 us, 0.03% latency, 10.77 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.05 us, 0.03% latency, 11.1 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 38.62 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 52.21 us, 0.02% latency, 36.87 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 927.93 us, 0.40% latency, 58.44 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 206.95 us, 0.09% latency, 121.6 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 220.54 us, 0.10% latency, 114.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.09 us, 0.03% latency, 12.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 75.82 us, 0.03% latency, 10.4 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.11 us, 0.02% latency, 43.65 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 80.82 us, 0.03% latency, 39.02 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 102.52 us, 0.04% latency, 30.77 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.35 us, 0.02% latency, 43.41 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (5): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.07 ms, 0.89% latency, 30.86 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 561.0 us, 0.24% latency, 5.75 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 59.37 us, 0.03% latency, 13.28 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.52 us, 0.03% latency, 11.85 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.0 us, 0.03% latency, 10.95 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.38 us, 0.03% latency, 11.37 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 39.82 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 50.78 us, 0.02% latency, 37.91 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 915.05 us, 0.40% latency, 59.26 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.99 us, 0.09% latency, 122.17 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.44 us, 0.10% latency, 113.13 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.57 us, 0.03% latency, 12.03 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.96 us, 0.03% latency, 10.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.82 us, 0.02% latency, 42.95 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 80.59 us, 0.03% latency, 39.14 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 111.34 us, 0.05% latency, 28.33 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.11 us, 0.02% latency, 43.65 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (6): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.04 ms, 0.88% latency, 31.24 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 539.06 us, 0.23% latency, 5.99 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 53.64 us, 0.02% latency, 14.7 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.9 us, 0.03% latency, 11.44 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 70.57 us, 0.03% latency, 11.17 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.76 us, 0.03% latency, 11.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 39.58 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.83 us, 0.02% latency, 38.63 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 926.73 us, 0.40% latency, 58.52 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.52 us, 0.09% latency, 122.45 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 216.01 us, 0.09% latency, 116.5 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.33 us, 0.03% latency, 12.07 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 75.82 us, 0.03% latency, 10.4 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.58 us, 0.02% latency, 43.18 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 80.11 us, 0.03% latency, 39.37 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 102.28 us, 0.04% latency, 30.84 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.58 us, 0.02% latency, 43.18 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (7): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.07 ms, 0.90% latency, 30.74 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 568.15 us, 0.25% latency, 5.68 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 59.37 us, 0.03% latency, 13.28 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.23 us, 0.03% latency, 11.73 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 74.63 us, 0.03% latency, 10.57 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.19 us, 0.03% latency, 11.56 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 38.15 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 51.5 us, 0.02% latency, 37.38 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 926.02 us, 0.40% latency, 58.56 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.99 us, 0.09% latency, 122.17 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 226.02 us, 0.10% latency, 111.34 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.76 us, 0.03% latency, 11.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.38 us, 0.03% latency, 11.37 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 46.97 us, 0.02% latency, 40.99 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 79.15 us, 0.03% latency, 39.85 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 101.57 us, 0.04% latency, 31.05 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.68 us, 0.02% latency, 40.37 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (8): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.05 ms, 0.89% latency, 31.04 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 525.24 us, 0.23% latency, 6.14 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 50.31 us, 0.02% latency, 15.67 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 62.7 us, 0.03% latency, 12.58 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 70.57 us, 0.03% latency, 11.17 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 74.86 us, 0.03% latency, 10.53 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 43.63 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 50.07 us, 0.02% latency, 38.45 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 896.93 us, 0.39% latency, 60.46 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 203.13 us, 0.09% latency, 123.89 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 221.49 us, 0.10% latency, 113.62 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.61 us, 0.03% latency, 12.2 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.72 us, 0.03% latency, 10.84 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 40.29 us, 0.02% latency, 47.78 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 89.41 us, 0.04% latency, 35.28 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 103.47 us, 0.04% latency, 30.48 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 62.7 us, 0.03% latency, 30.7 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (9): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.04 ms, 0.88% latency, 31.28 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 560.28 us, 0.24% latency, 5.76 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 54.84 us, 0.02% latency, 14.38 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 86.31 us, 0.04% latency, 9.14 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.48 us, 0.03% latency, 10.88 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.85 us, 0.03% latency, 12.16 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 38.39 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.83 us, 0.02% latency, 38.63 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 921.25 us, 0.40% latency, 58.86 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 207.42 us, 0.09% latency, 121.33 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.11 us, 0.09% latency, 114.86 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 73.43 us, 0.03% latency, 10.74 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.43 us, 0.03% latency, 11.52 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 41.01 us, 0.02% latency, 46.94 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 79.39 us, 0.03% latency, 39.73 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 98.71 us, 0.04% latency, 31.95 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.11 us, 0.02% latency, 43.65 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (10): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.03 ms, 0.87% latency, 31.49 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 549.08 us, 0.24% latency, 5.88 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 56.74 us, 0.02% latency, 13.9 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.9 us, 0.03% latency, 12.34 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 73.91 us, 0.03% latency, 10.67 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.24 us, 0.03% latency, 10.92 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 39.1 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.92 us, 0.02% latency, 40.17 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 902.41 us, 0.39% latency, 60.09 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.76 us, 0.09% latency, 122.31 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.87 us, 0.09% latency, 114.98 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.9 us, 0.03% latency, 12.34 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 70.1 us, 0.03% latency, 11.25 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.58 us, 0.02% latency, 43.18 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 78.92 us, 0.03% latency, 39.97 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 108.72 us, 0.05% latency, 29.01 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.11 us, 0.02% latency, 43.65 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (11): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.01 ms, 0.87% latency, 31.79 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 529.77 us, 0.23% latency, 6.09 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 53.41 us, 0.02% latency, 14.76 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.43 us, 0.03% latency, 11.52 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.62 us, 0.03% latency, 11.33 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.33 us, 0.03% latency, 12.07 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 46.49 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.21 us, 0.02% latency, 40.78 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 900.27 us, 0.39% latency, 60.24 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 206.95 us, 0.09% latency, 121.6 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 217.91 us, 0.09% latency, 115.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.13 us, 0.03% latency, 12.29 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 70.57 us, 0.03% latency, 11.17 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.87 us, 0.02% latency, 43.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 77.49 us, 0.03% latency, 40.71 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 105.62 us, 0.05% latency, 29.86 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.87 us, 0.02% latency, 43.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (12): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.01 ms, 0.87% latency, 31.75 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 537.87 us, 0.23% latency, 6.0 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.57 us, 0.03% latency, 12.03 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.09 us, 0.03% latency, 12.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.86 us, 0.03% latency, 11.29 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.52 us, 0.03% latency, 11.85 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 36.24 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.59 us, 0.02% latency, 38.82 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 894.31 us, 0.39% latency, 60.64 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.99 us, 0.09% latency, 122.17 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.35 us, 0.09% latency, 114.73 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.19 us, 0.03% latency, 11.56 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.66 us, 0.03% latency, 11.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.39 us, 0.02% latency, 44.37 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 87.02 us, 0.04% latency, 36.24 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 104.67 us, 0.05% latency, 30.14 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 42.44 us, 0.02% latency, 45.36 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (13): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.03 ms, 0.88% latency, 31.44 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 533.82 us, 0.23% latency, 6.04 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 56.74 us, 0.02% latency, 13.9 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.28 us, 0.03% latency, 11.9 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.14 us, 0.03% latency, 11.4 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.76 us, 0.03% latency, 11.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 37.67 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.68 us, 0.02% latency, 40.37 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 906.47 us, 0.39% latency, 59.82 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 204.09 us, 0.09% latency, 123.31 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 223.64 us, 0.10% latency, 112.53 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.76 us, 0.03% latency, 11.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 74.15 us, 0.03% latency, 10.63 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.83 us, 0.02% latency, 38.63 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 84.88 us, 0.04% latency, 37.16 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 103.0 us, 0.04% latency, 30.62 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.45 us, 0.02% latency, 40.58 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (14): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.0 ms, 0.86% latency, 31.91 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 527.38 us, 0.23% latency, 6.12 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 57.94 us, 0.03% latency, 13.61 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 62.7 us, 0.03% latency, 12.58 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.86 us, 0.03% latency, 11.29 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.43 us, 0.03% latency, 11.52 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 38.15 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 46.25 us, 0.02% latency, 41.62 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 892.64 us, 0.39% latency, 60.75 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 202.42 us, 0.09% latency, 124.33 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.82 us, 0.09% latency, 114.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.19 us, 0.03% latency, 11.56 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 70.81 us, 0.03% latency, 11.14 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 42.2 us, 0.02% latency, 45.62 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 83.21 us, 0.04% latency, 37.91 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 103.24 us, 0.04% latency, 30.55 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.11 us, 0.02% latency, 43.65 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (15): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.12 ms, 0.92% latency, 30.04 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 619.41 us, 0.27% latency, 5.21 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 57.46 us, 0.02% latency, 13.72 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.61 us, 0.03% latency, 12.2 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 97.51 us, 0.04% latency, 8.09 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.53 us, 0.03% latency, 11.02 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 37.19 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 83.68 us, 0.04% latency, 23.0 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 897.65 us, 0.39% latency, 60.41 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 204.56 us, 0.09% latency, 123.02 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.82 us, 0.09% latency, 114.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.76 us, 0.03% latency, 11.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 73.19 us, 0.03% latency, 10.77 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.87 us, 0.02% latency, 43.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 80.35 us, 0.03% latency, 39.26 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 99.18 us, 0.04% latency, 31.8 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.87 us, 0.02% latency, 43.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (16): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.1 ms, 0.91% latency, 30.31 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 624.42 us, 0.27% latency, 5.17 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 55.79 us, 0.02% latency, 14.13 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.66 us, 0.03% latency, 12.39 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.05 us, 0.03% latency, 11.1 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.72 us, 0.03% latency, 10.84 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 41.01 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 57.94 us, 0.03% latency, 33.23 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 891.21 us, 0.38% latency, 60.85 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 217.2 us, 0.09% latency, 115.87 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 221.01 us, 0.10% latency, 113.87 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.57 us, 0.03% latency, 12.03 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.85 us, 0.03% latency, 12.16 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 41.25 us, 0.02% latency, 46.67 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 79.15 us, 0.03% latency, 39.85 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 110.63 us, 0.05% latency, 28.51 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 40.77 us, 0.02% latency, 47.22 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (17): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.0 ms, 0.87% latency, 31.81 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 535.25 us, 0.23% latency, 6.03 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 60.8 us, 0.03% latency, 12.97 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.37 us, 0.03% latency, 12.25 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 70.33 us, 0.03% latency, 11.21 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 60.56 us, 0.03% latency, 13.02 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 40.05 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 48.88 us, 0.02% latency, 39.39 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 891.92 us, 0.39% latency, 60.8 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 204.56 us, 0.09% latency, 123.02 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.21 us, 0.10% latency, 113.25 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.42 us, 0.03% latency, 12.43 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.9 us, 0.03% latency, 11.44 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 46.73 us, 0.02% latency, 41.2 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 79.87 us, 0.03% latency, 39.49 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 102.28 us, 0.04% latency, 30.84 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.21 us, 0.02% latency, 40.78 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (18): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 3.11 ms, 1.34% latency, 20.48 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 543.36 us, 0.23% latency, 5.94 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 58.65 us, 0.03% latency, 13.44 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.09 us, 0.03% latency, 12.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.96 us, 0.03% latency, 10.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.28 us, 0.03% latency, 11.9 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 39.58 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 47.68 us, 0.02% latency, 40.37 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 1.96 ms, 0.84% latency, 27.72 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 222.68 us, 0.10% latency, 113.01 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 362.4 us, 0.16% latency, 69.44 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 76.29 us, 0.03% latency, 10.34 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 338.32 us, 0.15% latency, 2.33 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 54.36 us, 0.02% latency, 35.41 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 86.55 us, 0.04% latency, 36.44 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 108.48 us, 0.05% latency, 29.08 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 52.93 us, 0.02% latency, 36.37 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (19): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.04 ms, 0.88% latency, 31.33 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 557.42 us, 0.24% latency, 5.79 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 56.98 us, 0.02% latency, 13.84 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.42 us, 0.03% latency, 12.43 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 81.06 us, 0.03% latency, 9.73 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.71 us, 0.03% latency, 11.65 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 37.67 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 58.89 us, 0.03% latency, 32.69 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 896.22 us, 0.39% latency, 60.51 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 203.13 us, 0.09% latency, 123.89 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 220.54 us, 0.10% latency, 114.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 65.09 us, 0.03% latency, 12.11 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 73.91 us, 0.03% latency, 10.67 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 42.68 us, 0.02% latency, 45.11 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 79.63 us, 0.03% latency, 39.61 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 103.24 us, 0.04% latency, 30.55 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 42.2 us, 0.02% latency, 45.62 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (20): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.03 ms, 0.88% latency, 31.42 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 542.4 us, 0.23% latency, 5.95 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 54.84 us, 0.02% latency, 14.38 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.13 us, 0.03% latency, 12.29 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 71.76 us, 0.03% latency, 10.99 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.86 us, 0.03% latency, 11.29 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 39.82 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.11 us, 0.02% latency, 39.2 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 901.94 us, 0.39% latency, 60.12 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.52 us, 0.09% latency, 122.45 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 220.78 us, 0.10% latency, 113.99 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.61 us, 0.03% latency, 12.2 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 68.19 us, 0.03% latency, 11.56 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 48.64 us, 0.02% latency, 39.58 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 80.35 us, 0.03% latency, 39.26 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 112.3 us, 0.05% latency, 28.09 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.58 us, 0.02% latency, 43.18 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (21): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.11 ms, 0.91% latency, 30.23 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 545.26 us, 0.24% latency, 5.92 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 56.03 us, 0.02% latency, 14.07 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.76 us, 0.03% latency, 11.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 74.15 us, 0.03% latency, 10.63 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.0 us, 0.03% latency, 11.77 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 45.3 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 49.11 us, 0.02% latency, 39.2 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 886.44 us, 0.38% latency, 61.17 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 204.8 us, 0.09% latency, 122.88 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 218.15 us, 0.09% latency, 115.36 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.61 us, 0.03% latency, 12.2 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 67.71 us, 0.03% latency, 11.65 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 41.96 us, 0.02% latency, 45.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 78.68 us, 0.03% latency, 40.09 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 197.89 us, 0.09% latency, 15.94 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 41.96 us, 0.02% latency, 45.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (22): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.04 ms, 0.88% latency, 31.31 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 557.66 us, 0.24% latency, 5.79 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 57.22 us, 0.02% latency, 13.78 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 64.13 us, 0.03% latency, 12.29 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 85.59 us, 0.04% latency, 9.21 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.04 us, 0.03% latency, 11.94 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 37.43 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 50.54 us, 0.02% latency, 38.09 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 905.75 us, 0.39% latency, 59.87 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 202.18 us, 0.09% latency, 124.47 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 229.6 us, 0.10% latency, 109.61 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 66.28 us, 0.03% latency, 11.9 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 69.38 us, 0.03% latency, 11.37 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 42.92 us, 0.02% latency, 44.86 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 79.15 us, 0.03% latency, 39.85 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 102.28 us, 0.04% latency, 30.84 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 44.82 us, 0.02% latency, 42.95 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (23): WhisperDecoderLayer(
+          16.79 M, 2.20% Params, 31.88 GMACs, 0.60% MACs, 2.02 ms, 0.87% latency, 31.61 TFLOPS, 
+          (self_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 1.61 GMACs, 0.03% MACs, 533.34 us, 0.23% latency, 6.05 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 56.51 us, 0.02% latency, 13.95 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.18 us, 0.03% latency, 12.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.96 us, 0.03% latency, 10.81 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 72.48 us, 0.03% latency, 10.88 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (activation_fn): GELUActivation(0, 0.00% Params, 0 MACs, 0.00% MACs, 41.25 us, 0.02% latency, 0.0 FLOPS, )
+          (self_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 54.36 us, 0.02% latency, 35.41 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (encoder_attn): WhisperAttention(
+            4.2 M, 0.55% Params, 27.11 GMACs, 0.51% MACs, 896.69 us, 0.39% latency, 60.48 TFLOPS, 
+            (k_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 205.52 us, 0.09% latency, 122.45 TFLOPS, in_features=1024, out_features=1024, bias=False)
+            (v_proj): Linear(1.05 M, 0.14% Params, 12.58 GMACs, 0.24% MACs, 219.82 us, 0.09% latency, 114.48 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (q_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 63.66 us, 0.03% latency, 12.39 TFLOPS, in_features=1024, out_features=1024, bias=True)
+            (out_proj): Linear(1.05 M, 0.14% Params, 394.26 MMACs, 0.01% MACs, 77.49 us, 0.03% latency, 10.18 TFLOPS, in_features=1024, out_features=1024, bias=True)
+          )
+          (encoder_attn_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 43.87 us, 0.02% latency, 43.88 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+          (fc1): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 84.16 us, 0.04% latency, 37.48 TFLOPS, in_features=1024, out_features=4096, bias=True)
+          (fc2): Linear(4.2 M, 0.55% Params, 1.58 GMACs, 0.03% MACs, 102.52 us, 0.04% latency, 30.77 TFLOPS, in_features=4096, out_features=1024, bias=True)
+          (final_layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 41.01 us, 0.02% latency, 46.94 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (layer_norm): LayerNorm(2.05 k, 0.00% Params, 0 MACs, 0.00% MACs, 56.98 us, 0.02% latency, 33.78 GFLOPS, (1024,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (proj_out): Linear(53.11 M, 6.95% Params, 19.97 GMACs, 0.37% MACs, 346.9 us, 0.15% latency, 115.13 TFLOPS, in_features=1024, out_features=51864, bias=False)
+)
+------------------------------------------------------------------------------
