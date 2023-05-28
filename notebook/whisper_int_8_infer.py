@@ -31,13 +31,12 @@ dev_df['audio'] = dev_df['audio_paths'].replace('/AfriSpeech-100/',
                                                 regex=True)
 
 df = pd.concat([test_df, dev_df])
-df = df[:len(df) // 2]
 id_path_dict = dict(zip(df['ID'], df['audio']))
 
-model_id = "model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-full-fp16-training"  # Use the same model ID as before.
+model_id = "model/whisper-large-v2-3epoch-1e-4-cosine-deepspeed-full-fp16-full-fit"  # Use the same model ID as before.
 
 model = WhisperForConditionalGeneration.from_pretrained(
-    model_id,
+    "model/whisper-large-4epoch-1e-5-adam/checkpoint-4890"
 ).cuda()
 model.config.use_cache = True
 
@@ -99,7 +98,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 model.eval()
 dataset = dataset.map(prepare_dataset, writer_batch_size=64, num_proc=32,
                       cache_file_name="test_hf_cache.arrow", )
-valid_loader = DataLoader(dataset, batch_size=8,
+valid_loader = DataLoader(dataset, batch_size=12,
                           collate_fn=DataCollatorSpeechSeq2SeqWithPadding(processor), pin_memory=True, shuffle=False)
 submission = pd.DataFrame(columns=["ID", "transcript"])
 
@@ -113,13 +112,14 @@ for i, batch in tqdm(enumerate(valid_loader), total=len(valid_loader)):
                 num_beams=1,
                 do_sample=False
             ).cpu().numpy()
+
             decoded_preds = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
             for id, pred in zip(batch["ID"], decoded_preds):
                 submission = pd.concat([submission, pd.DataFrame({"ID": id, "transcript": pred}, index=[0])],
                                        ignore_index=True)
 
-submission.to_csv("submission/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3-full-fp16.csv", index=False)
+submission.to_csv("submission/whisper-large-4epoch-1e-5-adam-checkpoint-4890.csv", index=False)
 normalizer = BasicTextNormalizer()
 submission["transcript"] = submission["transcript"].apply(normalizer)
-submission.to_csv("submission/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-actual-3-cleaned-full-fp16.csv",
+submission.to_csv("submission/whisper-large-4epoch-1e-5-adam-checkpoint-4890-normalize.csv",
                   index=False)

@@ -103,33 +103,42 @@ class CFG:
 
 print(f"Training steps: {CFG.train_steps}")
 training_args = Seq2SeqTrainingArguments(
-    output_dir="/home/mithil/PycharmProjects/africa-2000audio/model/whisper-small-baseline",
+    output_dir=CFG.output_dir,
     # change to a repo name of your choice dsn_afrispeech
     per_device_train_batch_size=CFG.batch_size_per_device,
-    learning_rate=1e-5,
-    gradient_checkpointing=False,
-    evaluation_strategy="steps",
-    per_device_eval_batch_size=CFG.batch_size_per_device * 2,  # try 4 and see if it crashes
+    learning_rate=0.0001,
+    evaluation_strategy="epoch",
+    per_device_eval_batch_size=CFG.batch_size_per_device,  # try 4 and see if it crashes
     predict_with_generate=True,
     generation_max_length=448,
-    logging_steps=100,
-    report_to=["tensorboard"],
-    load_best_model_at_end=True,
-    metric_for_best_model="wer",
+    report_to=["tensorboard", "wandb"],
     greater_is_better=False,
-    max_steps=CFG.train_steps,
-    eval_steps=CFG.eval_steps,
     push_to_hub=False,
-    save_steps=CFG.eval_steps,
-    # gradient_accumulation_steps=2,
-    # deepspeed="/home/mithil/PycharmProjects/africa-2000audio/ds_config.json",
+    gradient_accumulation_steps=4,
+    fp16=True,
+    fp16_full_eval=True,
 
     seed=42,
     dataloader_num_workers=32,
-    fp16=True,
-    local_rank=os.environ["LOCAL_RANK"],
+    logging_steps=100,
+    save_strategy="epoch",
+    dataloader_pin_memory=True,
 
+    save_total_limit=3,
+    remove_unused_columns=False,
+    # required as the PeftModel forward doesn't have the signature of the wrapped model's forward
+    label_names=["labels"],
+    save_steps=CFG.eval_steps,
+    num_train_epochs=CFG.epochs,
+    tf32=True,
+    gradient_checkpointing=True,
+    deepspeed="ds_config.json",
+    load_best_model_at_end=True,
+    metric_for_best_model="wer",
 )
+
+
+
 train_dataset = train_dataset.select(range(100))
 valid_dataset = valid_dataset.select(range(100))
 trainer = Seq2SeqTrainer(

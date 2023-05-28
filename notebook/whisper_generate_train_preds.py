@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 warnings.filterwarnings("ignore")
 dataset = load_dataset("audiofolder",
                        data_dir="/home/mithil/PycharmProjects/africa-2000audio/data/train_hf",
+
                        )
 
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
@@ -23,11 +24,13 @@ model = WhisperForConditionalGeneration.from_pretrained(
     "model/whisper-large-v2-3epoch-1e-5-cosine-deepspeed-full-fp16-training",
 ).cuda()
 
-processor = WhisperProcessor.from_pretrained(model_id,
+processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2",
                                              )
-tokenizer = WhisperTokenizer.from_pretrained(model_id,
+tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large-v2",
                                              )
 feature_extractor = processor.feature_extractor
+
+
 def prepare_dataset(batch):
     audio = batch["audio"]
 
@@ -69,13 +72,15 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
 model.eval()
 forced_decoder_ids = processor.get_decoder_prompt_ids(language="en", task="transcribe")
-
-dataset['validation'] = dataset['validation'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
-                                                  cache_file_name="val_hf_cache.arrow")
-valid_loader = DataLoader(dataset['validation'], batch_size=2,
+dataset = dataset['train'].train_test_split(test_size=0.5, seed=42)
+print(dataset)
+dataset['test'] = dataset['test'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
+                                        cache_file_name="train_hf_cache_part_1.arrow")
+valid_loader = DataLoader(dataset['test'], batch_size=8,
                           collate_fn=DataCollatorSpeechSeq2SeqWithPadding(processor), pin_memory=True)
 from tqdm import tqdm
 import numpy as np
+
 model.config.use_cache = True
 
 preds = None
@@ -88,9 +93,8 @@ for step, batch in enumerate(tqdm(valid_loader)):
                     batch["input_features"].to("cuda"),
                     forced_decoder_ids=forced_decoder_ids,
                     max_new_tokens=448,
-                    num_beams=5,
-                    do_sample=True
-
+                    num_beams=1,
+                    do_sample=False
 
                 )
                 .cpu()
@@ -114,5 +118,5 @@ for step, batch in enumerate(tqdm(valid_loader)):
 import pandas as pd
 
 df = pd.DataFrame({"predictions": preds, "labels": labels_final})
-df.to_csv("oof/predictions.csv")
+df.to_csv("oof/predictions_train_1.csv", index=False)
 print(f"WER: {metric.compute(predictions=preds, references=labels_final)}")
