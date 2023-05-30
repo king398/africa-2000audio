@@ -72,7 +72,7 @@ forced_decoder_ids = processor.get_decoder_prompt_ids(language="en", task="trans
 
 dataset['validation'] = dataset['validation'].map(prepare_dataset, writer_batch_size=64, num_proc=32,
                                                   cache_file_name="val_hf_cache.arrow")
-valid_loader = DataLoader(dataset['validation'], batch_size=2,
+valid_loader = DataLoader(dataset['validation'], batch_size=8,
                           collate_fn=DataCollatorSpeechSeq2SeqWithPadding(processor), pin_memory=True)
 from tqdm import tqdm
 import numpy as np
@@ -88,8 +88,8 @@ for step, batch in enumerate(tqdm(valid_loader)):
                     batch["input_features"].to("cuda"),
                     forced_decoder_ids=forced_decoder_ids,
                     max_new_tokens=448,
-                    num_beams=5,
-                    do_sample=True
+                    num_beams=1,
+                    do_sample=False
 
 
                 )
@@ -114,5 +114,5 @@ for step, batch in enumerate(tqdm(valid_loader)):
 import pandas as pd
 
 df = pd.DataFrame({"predictions": preds, "labels": labels_final})
-df.to_csv("oof/predictions.csv")
+df.to_csv("oof/predictions_valid.csv")
 print(f"WER: {metric.compute(predictions=preds, references=labels_final)}")
